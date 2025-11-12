@@ -1,7 +1,6 @@
-# winternute ver2.7
+# winternute ver2.8
 # Wintermuteは、ObsidianのVaultをベクトルDBに登録して、自然言語で質問できるようにするツールです。
-# 今日の一言(today_msg.py)機能を追加中
-# markdownTextSplitterも検討中
+# splitterを選択できるようにしました。(v2.8)
 
 from asyncio.windows_utils import pipe
 from email.policy import default
@@ -174,7 +173,15 @@ def main():
     reindex = input(f"reindex? (y/n) [default: n]: ").strip().lower() == 'y'  # 再インデックスするかどうか
     # 初回 or 再インデックス時
     if reindex :
-        # embedding = OllamaEmbeddings(model="cl-nagoya-ruri-large")  # 日本語特化embeddingモデル
+        # splitterの選択
+        splitter_choice = input("Use MarkdownTextSplitter? (y/n) [default: y]: ").strip().lower()
+        if splitter_choice == 'y':
+            print("Using MarkdownTextSplitter")
+            splitter = MarkdownTextSplitter(chunk_size=1000, chunk_overlap=100)
+        else:
+            print("Using RecursiveCharacterTextSplitter")
+            splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200, separators=["\n\n", "\n", "。",  ".", " "])
+
         include_ai_gen = input(f"Include ai_generated? (y/n) [default: n]: ").strip().lower() == 'y'
         if include_ai_gen:
             exclude_dirs = ["devdoc", "copilot-custom-prompts"]
@@ -203,8 +210,6 @@ def main():
                 doc.metadata["timestamp"] = iso_str  # ISOフォーマットで保存
                 doc.page_content = f"[日時: {iso_str} / {jp_str} / {dt.strftime('%Y年%m月')}]\n" + doc.page_content
 
-        # splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=300, separators=["\n\n", "\n", "。",  ".", " "])
-        splitter = MarkdownTextSplitter( chunk_size=1000, chunk_overlap=100)
         splits = splitter.split_documents(docs) # timestampがmetadataに含まれているか確認が必要かもしれない
         # デバッグ用: チャンクの内容を確認
         # for i, split in enumerate(splits):
