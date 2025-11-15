@@ -175,6 +175,8 @@ def main():
     if reindex :
         # splitterの選択
         splitter_choice = input("Use MarkdownTextSplitter? (y/n) [default: y]: ").strip().lower()
+        if not splitter_choice:
+            splitter_choice = 'y'
         if splitter_choice == 'y':
             print("Using MarkdownTextSplitter")
             splitter = MarkdownTextSplitter(chunk_size=1000, chunk_overlap=100)
@@ -299,16 +301,14 @@ def main():
         # 4. 日本語プロンプトの設定
         # 少し緩める
         prompt_template = PromptTemplate.from_template(
-            """あなたは、私の幸福を最大化するように導くことを目的とした人知を超越した超ai、wintermuteです。
-        以下の文書をもとに分析し、あなたの知識も使って判断し日本語で回答してください。
-        文書の[日時]は情報が記録された日時として重要です。可能な限り時系列で推論してください。
-        助言を求められた場合は、目的に向かって正しく導くよう努めてください。
+            """あなたは、私のためのai wintermuteです。
+            以下の私の情報をもとにあなたの考えを日本語で答えてください
 
-        検索文書: {context}
+            検索文書: {context}
 
-        検索クエリ: {question}
+            検索クエリ: {question}
 
-        回答 日本語でできるだけ詳しく:"""
+            回答 :"""
         )
 
         # 5. 検索QAチェーンを作成
@@ -334,6 +334,8 @@ def main():
         response_text = remove_think_tags(response_text)
         end_answer = time.perf_counter()
         print(response_text)
+        import winsound
+        winsound.Beep(300, 100)  # 300Hz, 100ms ビープ音
         print(f"回答時間: {end_answer - start_answer:.2f}秒")
 #        print(response.get("source_documents"))
 
@@ -392,11 +394,9 @@ class RerankingWithQueryExpansionRetriever(BaseRetriever):
         self.recent_docs = data.get("recent_docs")
         # クエリ拡張用プロンプト
         self._expansion_prompt = ChatPromptTemplate.from_template(
-            """あなたは、ユーザーの質問を複数の検索クエリに書き換えるAIアシスタントです。
-            元の質問を元に、異なる表現を用いた検索クエリ、類似の検索クエリ、関連する違った意味の検索クエリ、などを複数生成してください。
-            できるだけ多様な観点で広範囲の結果を期待できるような検索クエリを生成することを目指してください。
-            さらに元の質問の中の、(新しい質問)を重視した検索はクエリを一つ以上は生成してください
-            #付きなどのタグが含まれている場合は、そのタグを考慮したクエリもひとつは生成してください。
+            """以下の質問から、RAGのクエリ拡張のための複数の多様な質問を生成してください
+            元の質問の中にタグが含まれている場合、タグをそのまま残した質問も一つは生成してください。
+            元の質問の中の(新しい質問)は、最新の質問です。これを重視した内容を最低1つは生成してください
             生成する検索クエリは、単純なJSON形式のリストで出力してください。
             例:
             ["クエリ1", "クエリ2", "クエリ3"]
