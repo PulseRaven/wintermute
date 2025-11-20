@@ -93,20 +93,20 @@ def main():
         "hf.co/mmnga/deepseek-r1-distill-qwen2.5-bakeneko-32b-gguf:Q4_K_M",
         "hf.co/unsloth/DeepSeek-R1-Distill-Qwen-32B-GGUF:Q4_K_M",
         "hf.co/mmnga/ELYZA-Shortcut-1.0-Qwen-32B-gguf:Q4_K_M",
-        # "qwen3:32b",
+        "qwen3:32b",
         "gpt-oss:20b", 
         "hf.co/gabriellarson/Tongyi-DeepResearch-30B-A3B-GGUF:Q4_K_M",
         "gemma3:27b",
-        # "hf.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF:Q8_0", 役に立たない
-        "hf.co/Qwen/Qwen3-8B-GGUF:Q8_0",
-        # "hf.co/LiquidAI/LFM2-2.6B-GGUF:F16", ほとんど使い物にならない
-        "hf.co/unsloth/Qwen3-4B-Instruct-2507-GGUF:F16",
-        # "hf.co/ibm-granite/granite-4.0-h-small-GGUF:Q4_K_M", #ほとんど使い物にならない
+        "Qwen3:8B",
+        # "hf.co/unsloth/Qwen3-4B-Instruct-2507-GGUF:F16",
         "qwen3-vl:235b-cloud",
         "deepseek-v3.1:671b-cloud", # トークン制限あり
         "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M",
-        # "gpt-oss:120b-cloud"    トークン制限あり
-
+        "glm-4.6:cloud",
+        "hf.co/unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF:Q4_K_M",
+        # "mistral-small3.2:latest",
+        "hf.co/mradermacher/GLM-4-32B-0414-GGUF:Q4_K_M",
+        "deepseek-r1:32b"
     ]
 
     # 会話履歴
@@ -135,7 +135,7 @@ def main():
             )
             model_name = "deepseek-v3.1 on Azure AI"
 
-        llm2 = OllamaLLM(model = "qwen3:14b")
+        llm2 = OllamaLLM(model = "qwen3:8b")
         print(f"Using {llm2.model} on Ollama as llm2")
         randomMode = False
     else:
@@ -144,10 +144,12 @@ def main():
             print(f"Randomly selected model: {model}")
             llm = OllamaLLM(model = model)
             randomMode = True
-            llm2 = OllamaLLM(model = "qwen3:14b")  
+            llm2 = OllamaLLM(model = "qwen3:8b")  
         else:
-            if input("Use aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M? (y/n) [default: n]: ").strip().lower() == 'y':
-                llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
+            if input("Use Feature model? (y/n) [default: n]: ").strip().lower() == 'y':
+                llm = OllamaLLM(model = "glm-4.6:cloud")
+                # llm = OllamaLLM(model = "hf.co/mradermacher/GLM-4-32B-0414-GGUF:Q4_K_M")
+                # llm = OllamaLLM(model = "hf.co/bartowski/THUDM_GLM-Z1-32B-0414-GGUF:Q4_K_M")
             else:
                 llm = OllamaLLM(model = "deepseek-v3.1:671b-cloud")
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
@@ -166,10 +168,10 @@ def main():
             # llm = OllamaLLM(model = "qwen3:32b") # cpu offload 重い
             print(f"Using {llm.model} on Ollama")
             randomMode = False
-            llm2 = OllamaLLM(model = "qwen3:14b")  
+            llm2 = OllamaLLM(model = "qwen3:8b")  
         print(f"Using {llm2.model} on Ollama as llm2")
 
-    embedding = RuriEmbeddingWithPrefixV3(device="cuda:1")  # ruri v3専用embeddingラッパー 12GB側（GPU 1）を使う場合
+    embedding = RuriEmbeddingWithPrefixV3(device="cuda:1")  # ruri v3専用embeddingラッパー 12GB側（GPU 1）を使う場合 時々入れ替わるので注意が必要
     reindex = input(f"reindex? (y/n) [default: n]: ").strip().lower() == 'y'  # 再インデックスするかどうか
     # 初回 or 再インデックス時
     if reindex :
@@ -258,7 +260,7 @@ def main():
     # recent_docs = summarize_recent_docs(adocs, llm)
     # recent_doc = Document(page_content=recent_summary, metadata={"source": "recent_summary"})
     base_retriever = vectordb.as_retriever(
-        search_kwargs ={"k": 10}    # RerankingWithQueryExpansionRetrieverでの取得件数
+        search_kwargs ={"k": 15}    # RerankingWithQueryExpansionRetrieverでの取得件数
             # , "score_threshold": 0.2},
             # search_type = "similarity_score_threshold"
     )
@@ -303,6 +305,7 @@ def main():
         prompt_template = PromptTemplate.from_template(
             """あなたは、私のためのai wintermuteです。
             以下の私の情報をもとにあなたの考えを日本語で答えてください
+            ただし、私が雑談を望んでいるときだけは、ragの検索結果にとらわれず、独創性や遊び心も交えて答えてください。
 
             検索文書: {context}
 
@@ -394,9 +397,10 @@ class RerankingWithQueryExpansionRetriever(BaseRetriever):
         self.recent_docs = data.get("recent_docs")
         # クエリ拡張用プロンプト
         self._expansion_prompt = ChatPromptTemplate.from_template(
-            """以下の質問から、RAGのクエリ拡張のための複数の多様な質問を生成してください
-            元の質問の中にタグが含まれている場合、タグをそのまま残した質問も一つは生成してください。
-            元の質問の中の(新しい質問)は、最新の質問です。これを重視した内容を最低1つは生成してください
+            """これは、obsidianのvaultに対するRAGのクエリ拡張のためのプロンプトです。
+            以下の質問から、RAGのクエリ拡張のための複数の多様な質問を生成してください
+            元の質問の中にタグが含まれている場合、タグをそのまま残したクエリを最低一つ生成してください。
+            元の質問の中の(新しい質問)は、最新の質問です。これを重視したクエリを最低1つ生成してください
             生成する検索クエリは、単純なJSON形式のリストで出力してください。
             例:
             ["クエリ1", "クエリ2", "クエリ3"]
@@ -453,7 +457,8 @@ class RerankingWithQueryExpansionRetriever(BaseRetriever):
             all_initial_docs.extend(self.recent_docs)
         # 重複を削除
         # unique_initial_docs = list({doc.page_content: doc for doc in all_initial_docs}.values())
-        unique_initial_docs = remove_semantic_duplicates(all_initial_docs, self.embedding, threshold=0.9)
+        unique_initial_docs = remove_semantic_duplicates_fast(all_initial_docs, self.embedding, threshold=0.95)
+        # unique_initial_docs = all_initial_docs
         print(f"取得したドキュメント数: {len(unique_initial_docs)}")
         print(f"ドキュメント取得時間: {time.perf_counter() - start_retrieve:.2f}秒")
         if not unique_initial_docs:
@@ -695,6 +700,21 @@ def save_chat_history_markdown(chat_history, vaultdir, llm_name=None, filename=N
         for i, (q, a) in enumerate(chat_history, 1):
             f.write(f"### Q{i}\n{q}\n\n")
             f.write(f"**A{i}**\n{a}\n\n")
+
+def remove_semantic_duplicates_fast(docs, embedding, threshold=0.95):
+    contents = [doc.page_content for doc in docs]
+    vecs = torch.tensor(embedding.embed_documents(contents)).to('cuda')
+    keep = []
+    mask = torch.ones(len(vecs), dtype=torch.bool, device=vecs.device)
+    for i in range(len(vecs)):
+        if not mask[i]:
+            continue
+        sims = torch.nn.functional.cosine_similarity(vecs[i].unsqueeze(0), vecs, dim=1)
+        dup_idx = (sims >= threshold) & mask
+        mask[dup_idx] = False
+        mask[i] = True
+        keep.append(docs[i])
+    return keep
 
 def remove_semantic_duplicates(docs, embedding, threshold=0.9):
     """
