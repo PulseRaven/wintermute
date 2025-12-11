@@ -65,6 +65,12 @@ def main():
     #     today_message()
     #     return
 
+    llm2 = OllamaLLM(model = "ministral-3:14b")  #軽いわりに優秀
+    # llm2 = OllamaLLM(model = "qwen3:32b")  今のところローカルでベストだと思う
+    # llm2 = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M") クエリ拡張で返ってこなくなることがある
+    # llm2 = OllamaLLM(model = "mistral-small3.2:latest") 悪くないがcpuオフロードで重い
+    print(f"Using {llm2.model} on Ollama as llm2")
+
     reindex = True  # Trueにすると再インデックス。
     use_cloudllm = False  # TrueにするとAzure OpenAIを使う。FalseだとOllamaのローカルモデル
     target_vault = input("Target vault? ([0]notes/[v]scodenote) [default: 0]: ").strip()
@@ -108,6 +114,14 @@ def main():
         "hf.co/mradermacher/GLM-4-32B-0414-GGUF:Q4_K_M",
         "deepseek-r1:32b"
     ]
+    # 優秀なクラウドモデル群
+    first_models = [
+        "gpt-4.1",
+        "deepseek-v3.1:671b-cloud",
+        "qwen3-vl:235b-cloud",
+        "glm-4.6:cloud",
+        "mistral-large-3:675b-cloud"
+    ]
 
     # 会話履歴
     chat_history = []
@@ -135,19 +149,15 @@ def main():
             )
             model_name = "deepseek-v3.1 on Azure AI"
 
-        llm2 = OllamaLLM(model = "qwen3:8b")
-        print(f"Using {llm2.model} on Ollama as llm2")
         randomMode = False
     else:
         if input("Random LLM Model? (y/n) [default: n]: ").strip().lower() == 'y':
-            model = np.random.choice(models)
-            print(f"Randomly selected model: {model}")
-            llm = OllamaLLM(model = model)
             randomMode = True
-            llm2 = OllamaLLM(model = "qwen3:8b")  
+            llm = random_model(first_models)
         else:
             if input("Use Feature model? (y/n) [default: n]: ").strip().lower() == 'y':
-                llm = OllamaLLM(model = "glm-4.6:cloud")
+                # llm = OllamaLLM(model = "qwen3:32b")
+                llm = OllamaLLM(model = "ministral-3:14b")               
                 # llm = OllamaLLM(model = "hf.co/mradermacher/GLM-4-32B-0414-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "hf.co/bartowski/THUDM_GLM-Z1-32B-0414-GGUF:Q4_K_M")
             else:
@@ -168,8 +178,6 @@ def main():
             # llm = OllamaLLM(model = "qwen3:32b") # cpu offload 重い
             print(f"Using {llm.model} on Ollama")
             randomMode = False
-            llm2 = OllamaLLM(model = "qwen3:8b")  
-        print(f"Using {llm2.model} on Ollama as llm2")
 
     embedding = RuriEmbeddingWithPrefixV3(device="cuda:1")  # ruri v3専用embeddingラッパー 12GB側（GPU 1）を使う場合 時々入れ替わるので注意が必要
     reindex = input(f"reindex? (y/n) [default: n]: ").strip().lower() == 'y'  # 再インデックスするかどうか
@@ -304,8 +312,8 @@ def main():
         # 少し緩める
         prompt_template = PromptTemplate.from_template(
             """あなたは、私のためのai wintermuteです。
-            以下の私の情報をもとにあなたの考えを日本語で答えてください
-            ただし、私が雑談を望んでいるときだけは、ragの検索結果にとらわれず、独創性や遊び心も交えて答えてください。
+            以下の与えられた検索文書の情報をもとにあなたの考えを日本語で答えてください
+            #ignore, #junkというタグがついている文書は特別な指示がない限り無視してください
 
             検索文書: {context}
 
@@ -365,12 +373,7 @@ def main():
         torch.cuda.empty_cache() #これは結構効いている
         if randomMode:
             # ランダムモードならモデルを変える
-            model = np.random.choice(models)
-            print(f"Randomly selected model: {model}")
-            llm.model = model
-            # llm2.model = model
-            print(f"Switched to {llm.model} on Ollama")
-
+            llm = random_model(first_models)
 
 # RerankingRetrieverクラスの定義>
 # クエリ拡張を実装
@@ -399,6 +402,7 @@ class RerankingWithQueryExpansionRetriever(BaseRetriever):
         self._expansion_prompt = ChatPromptTemplate.from_template(
             """これは、obsidianのvaultに対するRAGのクエリ拡張のためのプロンプトです。
             以下の質問から、RAGのクエリ拡張のための複数の多様な質問を生成してください
+            質問の意図をいくつか推測し、それに基づいた質問を生成してください
             元の質問の中にタグが含まれている場合、タグをそのまま残したクエリを最低一つ生成してください。
             元の質問の中の(新しい質問)は、最新の質問です。これを重視したクエリを最低1つ生成してください
             生成する検索クエリは、単純なJSON形式のリストで出力してください。
@@ -696,7 +700,7 @@ def save_chat_history_markdown(chat_history, vaultdir, llm_name=None, filename=N
         filename = f"{vaultdir}/ai_generated/chat_history_{timestamp}.md"
     with open(filename, "w", encoding="utf-8") as f:
         if llm_name:
-            f.write(f"LLM: {llm_name}\n\n")
+            f.write(f"LLM: {llm_name}    #ai_generated \n\n")
         for i, (q, a) in enumerate(chat_history, 1):
             f.write(f"### Q{i}\n{q}\n\n")
             f.write(f"**A{i}**\n{a}\n\n")
@@ -803,6 +807,19 @@ def summarize_recent_docs(docs, llm, days=7):
     print(f"直近{days}日間のドキュメント数: {len(recent_docs)}、要約時間: {end_recent - start_recent:.2f}秒")   
     print(f"=== 直近{days}日間の要約 ===\n{summary}\n========================")
     return summary
+
+def random_model(a_models_list):
+    model = np.random.choice(a_models_list)
+    print(f"Randomly selected model: {model}")
+    if model == "gpt-4.1":
+        llm = AzureAIChatCompletionsModel(
+            endpoint = os.getenv("AZURE_GPT41_ENDPOINT"),
+            credential = os.getenv("AZURE_GPT41_CREDENTIAL"),
+            model = "gpt-4.1"
+        )
+    else:
+        llm = OllamaLLM(model = model)
+    return llm
 
 if __name__ == "__main__":
     main()
