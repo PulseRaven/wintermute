@@ -65,12 +65,32 @@ def main():
     #     today_message()
     #     return
 
-    llm2 = OllamaLLM(model = "ministral-3:14b")  #軽いわりに優秀
+    llm2 = OllamaLLM(model = "ministral-3:14b")  #軽いわりにクエリ拡張が優秀
+    # llm2 = OllamaLLM(model = "hf.co/unsloth/Ministral-3-3B-Instruct-2512-GGUF:Q4_K_M") #3090なし運用 
+    # llm2 = AzureAIChatCompletionsModel(
+    #     endpoint = os.getenv("AZURE_DEEPSEEK_ENDPOINT"),
+    #     credential= os.getenv("AZURE_DEEPSEEK_CREDENTIAL"),
+    #     model = "deepseek-v3.1"
+    # )
+    # print(f"Using deepseek-v3.1 on Azure AI as llm2")
+    # llm2 = AzureAIChatCompletionsModel(
+    #     endpoint = os.getenv("AZURE_GPT41_ENDPOINT"),
+    #     credential = os.getenv("AZURE_GPT41_CREDENTIAL"),
+    #     model = "gpt-4.1"
+    # )
+    # print(f"Using gpt-4.1 on Azure AI as llm2")
+
     # llm2 = OllamaLLM(model = "qwen3:32b")  今のところローカルでベストだと思う
     # llm2 = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M") クエリ拡張で返ってこなくなることがある
     # llm2 = OllamaLLM(model = "mistral-small3.2:latest") 悪くないがcpuオフロードで重い
     print(f"Using {llm2.model} on Ollama as llm2")
 
+    # gpu確認
+    print(f"Available GPUs: {torch.cuda.device_count()}")
+    for i in range(torch.cuda.device_count()):
+        print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
+
+     # 1. ベクトルDBの永続化ディレクトリとObsidian Vaultのパス設定
     reindex = True  # Trueにすると再インデックス。
     use_cloudllm = False  # TrueにするとAzure OpenAIを使う。FalseだとOllamaのローカルモデル
     target_vault = input("Target vault? ([0]notes/[v]scodenote) [default: 0]: ").strip()
@@ -107,6 +127,7 @@ def main():
         # "hf.co/unsloth/Qwen3-4B-Instruct-2507-GGUF:F16",
         "qwen3-vl:235b-cloud",
         "deepseek-v3.1:671b-cloud", # トークン制限あり
+        "deepseek-v3.2:cloud",
         "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M",
         "glm-4.6:cloud",
         "hf.co/unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF:Q4_K_M",
@@ -117,9 +138,12 @@ def main():
     # 優秀なクラウドモデル群
     first_models = [
         "gpt-4.1",
-        "deepseek-v3.1:671b-cloud",
-        "qwen3-vl:235b-cloud",
-        "glm-4.6:cloud",
+        # "deepseek-v3.1:671b-cloud", 
+        "deepseek-v3.2:cloud", 
+        # "qwen3-vl:235b-cloud", 結構落ちるので外す
+        # "glm-4.6:cloud",
+        "glm-4.7:cloud",
+        "qwen3-next:80b-cloud",
         "mistral-large-3:675b-cloud"
     ]
 
@@ -156,12 +180,15 @@ def main():
             llm = random_model(first_models)
         else:
             if input("Use Feature model? (y/n) [default: n]: ").strip().lower() == 'y':
-                # llm = OllamaLLM(model = "qwen3:32b")
-                llm = OllamaLLM(model = "ministral-3:14b")               
+                # llm = OllamaLLM(model = "qwen3:4b") # テスト用
+                llm = OllamaLLM(model = "qwen3-next:80b-cloud")
+                # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
+                # llm = OllamaLLM(model = "nemotron-3-nano")    
+                # llm = OllamaLLM(model = "ministral-3:14b")               
                 # llm = OllamaLLM(model = "hf.co/mradermacher/GLM-4-32B-0414-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "hf.co/bartowski/THUDM_GLM-Z1-32B-0414-GGUF:Q4_K_M")
             else:
-                llm = OllamaLLM(model = "deepseek-v3.1:671b-cloud")
+                llm = OllamaLLM(model = "deepseek-v3.2:cloud")
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "qwen3-vl:235b-cloud")
             # llm = OllamaLLM(model = "gemma3:27b")
@@ -314,6 +341,7 @@ def main():
             """あなたは、私のためのai wintermuteです。
             以下の与えられた検索文書の情報をもとにあなたの考えを日本語で答えてください
             #ignore, #junkというタグがついている文書は特別な指示がない限り無視してください
+            回答にタグを含む場合は、タグをバッククォートしてください
 
             検索文書: {context}
 
