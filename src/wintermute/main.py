@@ -65,7 +65,8 @@ def main():
     #     today_message()
     #     return
 
-    llm2 = OllamaLLM(model = "ministral-3:14b")  #軽いわりにクエリ拡張が優秀
+    # llm2 = OllamaLLM(model = "ministral-3:14b")  軽いわりにクエリ拡張が優秀だが、2巡目になるととたんに遅くなる
+    llm2 = OllamaLLM(model = "qwen3:32b")
     # llm2 = OllamaLLM(model = "hf.co/unsloth/Ministral-3-3B-Instruct-2512-GGUF:Q4_K_M") #3090なし運用 
     # llm2 = AzureAIChatCompletionsModel(
     #     endpoint = os.getenv("AZURE_DEEPSEEK_ENDPOINT"),
@@ -138,6 +139,7 @@ def main():
     # 優秀なクラウドモデル群
     first_models = [
         "gpt-4.1",
+        "gpt-5.2-chat",
         # "deepseek-v3.1:671b-cloud", 
         "deepseek-v3.2:cloud", 
         # "qwen3-vl:235b-cloud", 結構落ちるので外す
@@ -165,13 +167,20 @@ def main():
             )
             model_name = "gpt-4.1 on Azure AI"
         else:
-            print("Using Deepseek-V3.1 on Azure AI")
+            print("Using gpt-5.2-chat on Azure AI")
             llm = AzureAIChatCompletionsModel(
-                endpoint = os.getenv("AZURE_DEEPSEEK_ENDPOINT"),
-                credential= os.getenv("AZURE_DEEPSEEK_CREDENTIAL"),
-                model = "deepseek-v3.1"
+                endpoint = os.getenv("AZURE_GPT52CHAT_ENDPOINT"),
+                credential= os.getenv("AZURE_GPT52CHAT_CREDENTIAL"),
+                model = "gpt-5.2-chat"
             )
-            model_name = "deepseek-v3.1 on Azure AI"
+            # model_name = "deepseek-v3.1 on Azure AI"
+            # print("Using Deepseek-V3.1 on Azure AI")
+            # llm = AzureAIChatCompletionsModel(
+            #     endpoint = os.getenv("AZURE_DEEPSEEK_ENDPOINT"),
+            #     credential= os.getenv("AZURE_DEEPSEEK_CREDENTIAL"),
+            #     model = "deepseek-v3.1"
+            # )
+            # model_name = "deepseek-v3.1 on Azure AI"
 
         randomMode = False
     else:
@@ -302,7 +311,7 @@ def main():
     reranker = RerankingWithQueryExpansionRetriever (
         base_retriever=base_retriever,
         reranker_model_name="cl-nagoya/ruri-v3-reranker-310m",  # Ruri v3 reranker
-        top_k=30,  
+        top_k=50,  
         query_expansion_llm=llm2,  # クエリ拡張用のLLM
         embedding=embedding,  # 埋め込みモデルを渡す
         recent_docs=recent_docs,
@@ -844,6 +853,12 @@ def random_model(a_models_list):
             endpoint = os.getenv("AZURE_GPT41_ENDPOINT"),
             credential = os.getenv("AZURE_GPT41_CREDENTIAL"),
             model = "gpt-4.1"
+        )
+    elif model == "gpt-5.2-chat":
+        llm = AzureAIChatCompletionsModel(
+            endpoint = os.getenv("AZURE_GPT52_ENDPOINT"),
+            credential = os.getenv("AZURE_GPT52_CREDENTIAL"),
+            model = "gpt-5.2-chat"
         )
     else:
         llm = OllamaLLM(model = model)
