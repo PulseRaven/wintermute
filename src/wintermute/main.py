@@ -66,7 +66,8 @@ def main():
     #     return
 
     # llm2 = OllamaLLM(model = "ministral-3:14b")  軽いわりにクエリ拡張が優秀だが、2巡目になるととたんに遅くなる
-    llm2 = OllamaLLM(model = "qwen3:32b")
+    llm2 = OllamaLLM(model = "qwen3:14b")  # クエリ拡張用llm
+    # llm2 = OllamaLLM(model = "qwen3:32b") ちょっと重い
     # llm2 = OllamaLLM(model = "hf.co/unsloth/Ministral-3-3B-Instruct-2512-GGUF:Q4_K_M") #3090なし運用 
     # llm2 = AzureAIChatCompletionsModel(
     #     endpoint = os.getenv("AZURE_DEEPSEEK_ENDPOINT"),
@@ -146,7 +147,8 @@ def main():
         # "glm-4.6:cloud",
         "glm-4.7:cloud",
         "qwen3-next:80b-cloud",
-        "mistral-large-3:675b-cloud"
+        "mistral-large-3:675b-cloud",
+        "gemini-3-flash-preview:latest"
     ]
 
     # 会話履歴
@@ -173,6 +175,7 @@ def main():
                 credential= os.getenv("AZURE_GPT52CHAT_CREDENTIAL"),
                 model = "gpt-5.2-chat"
             )
+            model_name = "gpt-5.2-chat on Azure AI"
             # model_name = "deepseek-v3.1 on Azure AI"
             # print("Using Deepseek-V3.1 on Azure AI")
             # llm = AzureAIChatCompletionsModel(
@@ -190,7 +193,7 @@ def main():
         else:
             if input("Use Feature model? (y/n) [default: n]: ").strip().lower() == 'y':
                 # llm = OllamaLLM(model = "qwen3:4b") # テスト用
-                llm = OllamaLLM(model = "qwen3-next:80b-cloud")
+                llm = OllamaLLM(model = "gemini-3-flash-preview:latest")
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "nemotron-3-nano")    
                 # llm = OllamaLLM(model = "ministral-3:14b")               
@@ -321,6 +324,16 @@ def main():
         # 問い合わせ入力
         print("質問を入力してください。ctrl+zで終了\n")
         querybody = sys.stdin.read()
+        # 空白またはctrl+zのみの場合はランダムモードならllm変更して継続、そうでなければ終了
+        if not querybody.strip():
+            print("空白またはctrl+zのみの入力です。")
+            if randomMode:
+                print("ランダムモード: モデルを変更して次のループへ")
+                llm = random_model(first_models)
+                continue
+            else:
+                print("通常モード: 終了します")
+                break
         datestr = "今は " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " です。\n"
         query = datestr + querybody
         print("thinking...")
@@ -856,7 +869,7 @@ def random_model(a_models_list):
         )
     elif model == "gpt-5.2-chat":
         llm = AzureAIChatCompletionsModel(
-            endpoint = os.getenv("AZURE_GPT52_ENDPOINT"),
+            endpoint = os.getenv("AZURE_GPT52CHAT_ENDPOINT"),
             credential = os.getenv("AZURE_GPT52_CREDENTIAL"),
             model = "gpt-5.2-chat"
         )
