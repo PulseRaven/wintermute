@@ -65,8 +65,8 @@ def main():
     #     today_message()
     #     return
 
-    # llm2 = OllamaLLM(model = "ministral-3:14b")  軽いわりにクエリ拡張が優秀だが、2巡目になるととたんに遅くなる
-    llm2 = OllamaLLM(model = "qwen3:14b")  # クエリ拡張用llm
+    llm2 = OllamaLLM(model = "ministral-3:14b")  # クエリ拡張が優秀だが、2巡目になるととたんに遅くなる。回答が冗長になりがちなのでプロンプトに工夫が必要かもしれない
+    # llm2 = OllamaLLM(model = "qwen3:14b")  # 軽くてバランスがいい
     # llm2 = OllamaLLM(model = "qwen3:32b") ちょっと重い
     # llm2 = OllamaLLM(model = "hf.co/unsloth/Ministral-3-3B-Instruct-2512-GGUF:Q4_K_M") #3090なし運用 
     # llm2 = AzureAIChatCompletionsModel(
@@ -187,7 +187,7 @@ def main():
 
         randomMode = False
     else:
-        if input("Random LLM Model? (y/n) [default: n]: ").strip().lower() == 'y':
+        if input("Random LLM Model? (y/n) [default: y]: ").strip().lower() != 'n':
             randomMode = True
             llm = random_model(first_models)
         else:
@@ -200,7 +200,7 @@ def main():
                 # llm = OllamaLLM(model = "hf.co/mradermacher/GLM-4-32B-0414-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "hf.co/bartowski/THUDM_GLM-Z1-32B-0414-GGUF:Q4_K_M")
             else:
-                llm = OllamaLLM(model = "deepseek-v3.2:cloud")
+                llm = OllamaLLM(model = "deepseek-v3.2:cloud") #デフォルトのモデル
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "qwen3-vl:235b-cloud")
             # llm = OllamaLLM(model = "gemma3:27b")
