@@ -65,7 +65,8 @@ def main():
     #     today_message()
     #     return
 
-    llm2 = OllamaLLM(model = "ministral-3:14b")  # クエリ拡張が優秀だが、2巡目になるととたんに遅くなる。回答が冗長になりがちなのでプロンプトに工夫が必要かもしれない
+    # llm2 = OllamaLLM(model = "ministral-3:14b")  # クエリ拡張が優秀だが、2巡目になるととたんに遅くなる。回答が冗長になりがちなのでプロンプトに工夫が必要かもしれない
+    llm2 = OllamaLLM(model = "hf.co/TeichAI/Qwen3-14B-GPT-5.2-High-Reasoning-Distill-GGUF:Q4_K_M") #しばらく試しに使ってみる
     # llm2 = OllamaLLM(model = "qwen3:14b")  # 軽くてバランスがいい
     # llm2 = OllamaLLM(model = "qwen3:32b") ちょっと重い
     # llm2 = OllamaLLM(model = "hf.co/unsloth/Ministral-3-3B-Instruct-2512-GGUF:Q4_K_M") #3090なし運用 
@@ -116,6 +117,9 @@ def main():
     models = [
         "qwen3:14b",
         "qwen3:30b",
+        "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M",
+        "hf.co/TeichAI/Qwen3-14B-GPT-5.2-High-Reasoning-Distill-GGUF:Q4_K_M",
+        "hf.co/TeichAI/Qwen3-14B-Claude-4.5-Opus-High-Reasoning-Distill-GGUF:Q4_K_M",
         "hf.co/unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF:Q4_K_M",
         "hf.co/mmnga/qwen2.5-bakeneko-32b-instruct-v2-gguf:Q4_K_M",
         "hf.co/mmnga/deepseek-r1-distill-qwen2.5-bakeneko-32b-gguf:Q4_K_M",
@@ -191,9 +195,12 @@ def main():
             randomMode = True
             llm = random_model(first_models)
         else:
-            if input("Use Feature model? (y/n) [default: n]: ").strip().lower() == 'y':
+            if input("Use Feature model? (y/n) [default: y]: ").strip().lower() != 'n':
                 # llm = OllamaLLM(model = "qwen3:4b") # テスト用
-                llm = OllamaLLM(model = "gemini-3-flash-preview:latest")
+                llm = OllamaLLM(model = "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M")
+                llm2 = OllamaLLM(model = "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M")
+
+                # llm = OllamaLLM(model = "gemini-3-flash-preview:latest")
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "nemotron-3-nano")    
                 # llm = OllamaLLM(model = "ministral-3:14b")               
@@ -870,7 +877,7 @@ def random_model(a_models_list):
     elif model == "gpt-5.2-chat":
         llm = AzureAIChatCompletionsModel(
             endpoint = os.getenv("AZURE_GPT52CHAT_ENDPOINT"),
-            credential = os.getenv("AZURE_GPT52_CREDENTIAL"),
+            credential = os.getenv("AZURE_GPT52CHAT_CREDENTIAL"),
             model = "gpt-5.2-chat"
         )
     else:
