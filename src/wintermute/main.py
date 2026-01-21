@@ -57,6 +57,7 @@ import json
 from langchain_azure_ai.chat_models import AzureAIChatCompletionsModel
 import numpy as np
 from langchain_community.llms import HuggingFacePipeline
+from langchain_openai import ChatOpenAI
 
 def main():
     # 循環インポートの問題をクリアするまでは単独実行にする
@@ -145,6 +146,7 @@ def main():
     first_models = [
         "gpt-4.1",
         "gpt-5.2-chat",
+        "gpt-5.2",
         # "deepseek-v3.1:671b-cloud", 
         "deepseek-v3.2:cloud", 
         # "qwen3-vl:235b-cloud", 結構落ちるので外す
@@ -161,7 +163,7 @@ def main():
     first_question = None  # 最初の質問をホールドする変数
 
     randomMode = False  # Ensure randomMode is always defined
-    use_cloudllm = input("Use Azure AI? (y/n) [default: n]: ").strip().lower() == 'y'
+    use_cloudllm = input("Use GPT? (y/n) [default: n]: ").strip().lower() == 'y'
     if use_cloudllm:
         use_gpt41 = input("Use GPT-4.1? (y/n) [default: n]: ").strip().lower() == 'y'
         if use_gpt41:
@@ -173,13 +175,13 @@ def main():
             )
             model_name = "gpt-4.1 on Azure AI"
         else:
-            print("Using gpt-5.2-chat on Azure AI")
-            llm = AzureAIChatCompletionsModel(
-                endpoint = os.getenv("AZURE_GPT52CHAT_ENDPOINT"),
-                credential= os.getenv("AZURE_GPT52CHAT_CREDENTIAL"),
-                model = "gpt-5.2-chat"
+            print("Using gpt-5.2 on openai")
+            llm = ChatOpenAI(
+                model="gpt-5.2",
+                openai_api_key=os.getenv("OPENAI_API_KEY"),
+                temperature=0.7  # 必要に応じて調整
             )
-            model_name = "gpt-5.2-chat on Azure AI"
+            model_name = "gpt-5.2 (OpenAI)"
             # model_name = "deepseek-v3.1 on Azure AI"
             # print("Using Deepseek-V3.1 on Azure AI")
             # llm = AzureAIChatCompletionsModel(
@@ -197,9 +199,10 @@ def main():
         else:
             if input("Use Feature model? (y/n) [default: y]: ").strip().lower() != 'n':
                 # llm = OllamaLLM(model = "qwen3:4b") # テスト用
-                llm = OllamaLLM(model = "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M")
-                llm2 = OllamaLLM(model = "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M")
-
+                # llm = OllamaLLM(model = "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M")
+                # llm2 = OllamaLLM(model = "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M")
+                llm = OllamaLLM(model = "qwen3:32b")
+                llm2 = OllamaLLM(model = "qwen3:32b")
                 # llm = OllamaLLM(model = "gemini-3-flash-preview:latest")
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "nemotron-3-nano")    
@@ -222,7 +225,7 @@ def main():
             # llm = OllamaLLM(model = "hf.co/mmnga/ELYZA-Shortcut-1.0-Qwen-32B-gguf:Q4_K_M")
             # llm = OllamaLLM(model = "gpt-oss:20b") 
             # llm = OllamaLLM(model = "qwen3:32b") # cpu offload 重い
-            print(f"Using {llm.model} on Ollama")
+            print(f"Using {llm.model}")
             randomMode = False
 
     embedding = RuriEmbeddingWithPrefixV3(device="cuda:1")  # ruri v3専用embeddingラッパー 12GB側（GPU 1）を使う場合 時々入れ替わるので注意が必要
@@ -880,6 +883,12 @@ def random_model(a_models_list):
             credential = os.getenv("AZURE_GPT52CHAT_CREDENTIAL"),
             model = "gpt-5.2-chat"
         )
+    elif model == "gpt-5.2":
+        llm = ChatOpenAI(
+            model="gpt-5.2",
+            temperature=0.7,
+            openai_api_key=os.getenv("OPENAI_API_KEY")
+        )   
     else:
         llm = OllamaLLM(model = model)
     return llm
