@@ -65,8 +65,8 @@ def main():
     #     today_message()
     #     return
 
-    # llm2 = OllamaLLM(model = "ministral-3:14b")  # クエリ拡張が優秀だが、2巡目になるととたんに遅くなる。回答が冗長になりがちなのでプロンプトに工夫が必要かもしれない
-    llm2 = OllamaLLM(model = "hf.co/TeichAI/Qwen3-14B-GPT-5.2-High-Reasoning-Distill-GGUF:Q4_K_M") #しばらく試しに使ってみる
+    llm2 = OllamaLLM(model = "ministral-3:14b")  # クエリ拡張が優秀だが、2巡目になるととたんに遅くなる。回答が冗長になりがちなのでプロンプトに工夫が必要かもしれない
+    # llm2 = OllamaLLM(model = "hf.co/TeichAI/Qwen3-14B-GPT-5.2-High-Reasoning-Distill-GGUF:Q4_K_M") #しばらく試しに使ってみる
     # llm2 = OllamaLLM(model = "qwen3:14b")  # 軽くてバランスがいい
     # llm2 = OllamaLLM(model = "qwen3:32b") ちょっと重い
     # llm2 = OllamaLLM(model = "hf.co/unsloth/Ministral-3-3B-Instruct-2512-GGUF:Q4_K_M") #3090なし運用 
