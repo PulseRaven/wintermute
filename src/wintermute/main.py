@@ -115,37 +115,21 @@ def main():
     
 
     print(f"initialize wintermute...({target_vault})")
+    # ローカルモデル
     models = [
-        "qwen3:14b",
+        "glm-4.7-flash",
+        "hf.co/YanLabs/gemma-3-27b-it-abliterated-normpreserve-GGUF:Q6_K",
+        "hf.co/RoadToNowhere/Qwen3-32B-abliterated-Q4_K_M-GGUF:Q4_K_M",
+        "hf.co/mradermacher/Qwen3-32B-Uncensored-GGUF:Q4_K_M",
+        "huihui_ai/qwenlong-l1.5-abliterated:30b",
         "qwen3:30b",
         "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M",
-        "hf.co/TeichAI/Qwen3-14B-GPT-5.2-High-Reasoning-Distill-GGUF:Q4_K_M",
-        "hf.co/TeichAI/Qwen3-14B-Claude-4.5-Opus-High-Reasoning-Distill-GGUF:Q4_K_M",
-        "hf.co/unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF:Q4_K_M",
-        "hf.co/mmnga/qwen2.5-bakeneko-32b-instruct-v2-gguf:Q4_K_M",
-        "hf.co/mmnga/deepseek-r1-distill-qwen2.5-bakeneko-32b-gguf:Q4_K_M",
-        "hf.co/unsloth/DeepSeek-R1-Distill-Qwen-32B-GGUF:Q4_K_M",
-        "hf.co/mmnga/ELYZA-Shortcut-1.0-Qwen-32B-gguf:Q4_K_M",
         "qwen3:32b",
-        "gpt-oss:20b", 
-        "hf.co/gabriellarson/Tongyi-DeepResearch-30B-A3B-GGUF:Q4_K_M",
         "gemma3:27b",
-        "Qwen3:8B",
-        # "hf.co/unsloth/Qwen3-4B-Instruct-2507-GGUF:F16",
-        "qwen3-vl:235b-cloud",
-        "deepseek-v3.1:671b-cloud", # トークン制限あり
-        "deepseek-v3.2:cloud",
-        "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M",
-        "glm-4.6:cloud",
-        "hf.co/unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF:Q4_K_M",
-        # "mistral-small3.2:latest",
-        "hf.co/mradermacher/GLM-4-32B-0414-GGUF:Q4_K_M",
         "deepseek-r1:32b"
     ]
     # 優秀なクラウドモデル群
     first_models = [
-        "gpt-4.1",
-        "gpt-5.2-chat",
         "gpt-5.2",
         # "deepseek-v3.1:671b-cloud", 
         "deepseek-v3.2:cloud", 
@@ -163,34 +147,15 @@ def main():
     first_question = None  # 最初の質問をホールドする変数
 
     randomMode = False  # Ensure randomMode is always defined
-    use_cloudllm = input("Use GPT? (y/n) [default: n]: ").strip().lower() == 'y'
+    use_cloudllm = input("Use GPT5.2? (y/n) [default: n]: ").strip().lower() == 'y'
     if use_cloudllm:
-        use_gpt41 = input("Use GPT-4.1? (y/n) [default: n]: ").strip().lower() == 'y'
-        if use_gpt41:
-            print("Using gpt-4.1 on Azure AI")
-            llm = AzureAIChatCompletionsModel(
-                endpoint = os.getenv("AZURE_GPT41_ENDPOINT"),
-                credential = os.getenv("AZURE_GPT41_CREDENTIAL"),
-                model = "gpt-4.1"
-            )
-            model_name = "gpt-4.1 on Azure AI"
-        else:
-            print("Using gpt-5.2 on openai")
-            llm = ChatOpenAI(
-                model="gpt-5.2",
-                openai_api_key=os.getenv("OPENAI_API_KEY"),
-                temperature=0.7  # 必要に応じて調整
-            )
-            model_name = "gpt-5.2 (OpenAI)"
-            # model_name = "deepseek-v3.1 on Azure AI"
-            # print("Using Deepseek-V3.1 on Azure AI")
-            # llm = AzureAIChatCompletionsModel(
-            #     endpoint = os.getenv("AZURE_DEEPSEEK_ENDPOINT"),
-            #     credential= os.getenv("AZURE_DEEPSEEK_CREDENTIAL"),
-            #     model = "deepseek-v3.1"
-            # )
-            # model_name = "deepseek-v3.1 on Azure AI"
-
+        print("Using gpt-5.2 on openai")
+        llm = ChatOpenAI(
+            model="gpt-5.2",
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            temperature=0.7  # 必要に応じて調整
+        )
+        model_name = "gpt-5.2 (OpenAI)"
         randomMode = False
     else:
         if input("Random LLM Model? (y/n) [default: y]: ").strip().lower() != 'n':
@@ -200,15 +165,18 @@ def main():
             if input("Use Feature model? (y/n) [default: y]: ").strip().lower() != 'n':
                 # llm = OllamaLLM(model = "qwen3:4b") # テスト用
                 # llm = OllamaLLM(model = "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M")
-                # llm2 = OllamaLLM(model = "hf.co/TeichAI/Qwen3-30B-A3B-Thinking-2507-Claude-4.5-Sonnet-High-Reasoning-Distill-GGUF:Q4_K_M")
-                llm = OllamaLLM(model = "qwen3:32b")
-                llm2 = OllamaLLM(model = "qwen3:32b")
-                # llm = OllamaLLM(model = "gemini-3-flash-preview:latest")
+                # llm = OllamaLLM(model = "qwen3:32b")
+                # llm = OllamaLLM(model = "gemma3:27b")
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "nemotron-3-nano")    
                 # llm = OllamaLLM(model = "ministral-3:14b")               
-                # llm = OllamaLLM(model = "hf.co/mradermacher/GLM-4-32B-0414-GGUF:Q4_K_M")
+                # llm = OllamaLLM(model = "hf.co/RoadToNowhere/Qwen3-32B-abliterated-Q4_K_M-GGUF:Q4_K_M")
+                # llm = OllamaLLM(model = "hf.co/mradermacher/Qwen3-32B-Uncensored-GGUF:Q4_K_M")
+                # llm = OllamaLLM(model = "huihui_ai/qwenlong-l1.5-abliterated:30b")
+                llm = OllamaLLM(model = "hf.co/YanLabs/gemma-3-27b-it-abliterated-normpreserve-GGUF:Q6_K")
+                # llm = OllamaLLM(model = "glm-4.7-flash)
                 # llm = OllamaLLM(model = "hf.co/bartowski/THUDM_GLM-Z1-32B-0414-GGUF:Q4_K_M")
+                llm2 = llm
             else:
                 llm = OllamaLLM(model = "deepseek-v3.2:cloud") #デフォルトのモデル
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
@@ -871,19 +839,7 @@ def summarize_recent_docs(docs, llm, days=7):
 def random_model(a_models_list):
     model = np.random.choice(a_models_list)
     print(f"Randomly selected model: {model}")
-    if model == "gpt-4.1":
-        llm = AzureAIChatCompletionsModel(
-            endpoint = os.getenv("AZURE_GPT41_ENDPOINT"),
-            credential = os.getenv("AZURE_GPT41_CREDENTIAL"),
-            model = "gpt-4.1"
-        )
-    elif model == "gpt-5.2-chat":
-        llm = AzureAIChatCompletionsModel(
-            endpoint = os.getenv("AZURE_GPT52CHAT_ENDPOINT"),
-            credential = os.getenv("AZURE_GPT52CHAT_CREDENTIAL"),
-            model = "gpt-5.2-chat"
-        )
-    elif model == "gpt-5.2":
+    if model == "gpt-5.2":
         llm = ChatOpenAI(
             model="gpt-5.2",
             temperature=0.7,
