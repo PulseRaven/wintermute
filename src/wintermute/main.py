@@ -1,4 +1,5 @@
-# winternute ver2.8
+# winternute ver2.9
+# lcelに移行しました。
 # Wintermuteは、ObsidianのVaultをベクトルDBに登録して、自然言語で質問できるようにするツールです。
 # splitterを選択できるようにしました。(v2.8)
 
@@ -22,9 +23,10 @@ from langchain_chroma import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.text_splitter import MarkdownTextSplitter
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
-from langchain.chains import RetrievalQA
 from pathlib import Path
 from langchain.prompts import PromptTemplate, ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 from langchain.docstore.document import Document
 from numpy import isin
 from regex import F
@@ -352,25 +354,17 @@ def main():
             回答 :"""
         )
 
-        # 5. 検索QAチェーンを作成
-        qa = RetrievalQA.from_chain_type(
-            llm=llm,
-            retriever=reranker,
-            chain_type="stuff",
-            chain_type_kwargs={
-                "prompt": prompt_template,
-            },
-            return_source_documents=True,
+        # 5. LCELチェーンを作成
+        chain = (
+            {"context": reranker | format_context, "question": RunnablePassthrough()}
+            | prompt_template
+            | llm
+            | StrOutputParser()
         )
 
         # 6. 質問
         start_answer = time.perf_counter()
-        context_docs = qa.retriever.invoke(conversational_query)
-        context = format_context(context_docs)
-        # response = qa.invoke({"query": conversational_query, "context": context})
-        response = llm.invoke(
-            prompt_template.format(context=context, question=conversational_query)
-        )
+        response = chain.invoke(conversational_query)
         response_text = extract_response_text(response)
         response_text = remove_think_tags(response_text)
         end_answer = time.perf_counter()
