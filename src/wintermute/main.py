@@ -170,15 +170,17 @@ def main():
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "nemotron-3-nano")    
                 # llm = OllamaLLM(model = "ministral-3:14b")               
-                # llm = OllamaLLM(model = "hf.co/RoadToNowhere/Qwen3-32B-abliterated-Q4_K_M-GGUF:Q4_K_M")
+                llm = OllamaLLM(model = "hf.co/RoadToNowhere/Qwen3-32B-abliterated-Q4_K_M-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "hf.co/mradermacher/Qwen3-32B-Uncensored-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "huihui_ai/qwenlong-l1.5-abliterated:30b")
-                llm = OllamaLLM(model = "hf.co/YanLabs/gemma-3-27b-it-abliterated-normpreserve-GGUF:Q6_K")
+                # llm = OllamaLLM(model = "huihui_ai/qwen3-next-abliterated:80b")
+                # llm = OllamaLLM(model = "hf.co/YanLabs/gemma-3-27b-it-abliterated-normpreserve-GGUF:Q6_K")
                 # llm = OllamaLLM(model = "glm-4.7-flash)
                 # llm = OllamaLLM(model = "hf.co/bartowski/THUDM_GLM-Z1-32B-0414-GGUF:Q4_K_M")
-                llm2 = llm
+                # llm2 = llm
             else:
-                llm = OllamaLLM(model = "deepseek-v3.2:cloud") #デフォルトのモデル
+                llm = OllamaLLM(model = "hf.co/YanLabs/gemma-3-27b-it-abliterated-normpreserve-GGUF:Q6_K")
+                # llm = OllamaLLM(model = "deepseek-v3.2:cloud") #デフォルトのモデル
                 # llm = OllamaLLM(model = "hf.co/unsloth/aquif-3.5-Max-42B-A3B-GGUF:Q4_K_M")
                 # llm = OllamaLLM(model = "qwen3-vl:235b-cloud")
             # llm = OllamaLLM(model = "gemma3:27b")
